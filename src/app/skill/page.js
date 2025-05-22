@@ -218,8 +218,16 @@
     const [selectedUser, setSelectedUser] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
+    const [pdfText, setPdfText] = useState('');
     const [isMounted,setIsMounted] = useState(false);
 
+    useEffect(() => {
+      let isMountedForPdf = true;
+
+      const fetchAndExtractPdf = async () =>{
+        
+      }
+    },[])
     const fetchData = async () =>{
       try{
         console.log(searchTerm);
