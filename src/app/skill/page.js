@@ -1,10 +1,13 @@
   "use client"
   import React, { useState, useEffect } from 'react';
-  import { GoogleGenerativeAI } from '@google/generative-ai';
+  import { GoogleGenAI } from '@google/genai';
+  import * as pdfjsLib from 'pdfjs-dist/build/pdf';
 
-  const AIP_KEY = "スマホのキー";
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker.js';
+  
+  const GEMINI_API_KEY = "AIzaSyDmM81qMtcukHF-NIp6kvvuzKU6p30F99Y";
 
-  const genAI = new GoogleGenerativeAI(AIP_KEY);
+  const AImodel = new GoogleGenAI({apiKey: GEMINI_API_KEY});
 
   // アイコン (Lucide React) - MVPに必要なものだけ残す
   const SearchIcon = ({ className = "w-6 h-6" }) => (
@@ -215,10 +218,24 @@
     const [selectedUser, setSelectedUser] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
-    const [prompt, setPrompt] = useState('');
-    const [response, setResponse] = useState('');
-    const [error, setError] = useState(null);
+    const [isMounted,setIsMounted] = useState(false);
 
+    const fetchData = async () =>{
+      try{
+        console.log(searchTerm);
+        const response = await AImodel.models.generateContent({
+          model: 'gemini-2.0-flash-001',
+          contents: searchTerm
+        })
+        console.log(response);
+        console.log(response.candidates[0].content.parts[0].text);
+      }catch(e){
+        console.log(e);
+      }finally{
+        setIsLoading(false);
+        setIsMounted(false);
+      }
+    }
 
     // 検索処理 (MVPではモックデータフィルタリング)
     const handleSearch = () => {
@@ -230,42 +247,19 @@
       setIsLoading(true);
       setHasSearched(true);
 
-      // Simulate API call delay
-      setTimeout(() => {
-          const lowerSearchTerm = searchTerm.toLowerCase();
-          const results = mockUsers.filter(user => 
-            user.name.toLowerCase().includes(lowerSearchTerm) ||
-            user.department.toLowerCase().includes(lowerSearchTerm) ||
-            user.skills.some(skill => skill.toLowerCase().includes(lowerSearchTerm))
-          );
-          setSearchResults(results);
-          setIsLoading(false);
-      }, 500);
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      const results = mockUsers.filter(user => 
+        user.name.toLowerCase().includes(lowerSearchTerm) ||
+        user.department.toLowerCase().includes(lowerSearchTerm) ||
+        user.skills.some(skill => skill.toLowerCase().includes(lowerSearchTerm))
+      );
+      setIsMounted(true);
+      setSearchResults(results);
     };
-    
-    useEffect( async()=>{
-      setError(null);
-      setResponse('');
 
-      if(!prompt){
-        setError('プロンプトが空です');
-        return;
-      }
-
-      try{
-        const model = genAI.getGenerativeModel({model: 'gemini-pro'});
-        const result = await model.generateContent(prompt);
-        const apiResponse = result.response;
-        const text = apiResponse.text();
-
-        setResponse(text);
-      }catch(e){
-        console.log(e);
-        setError(`failed to get ressponse from Gimini API: ${e.message}`);
-      }finally{
-        setIsLoading(false);
-      }
-    },[]);
+    useEffect(()=>{
+      fetchData();
+    },[searchResults,isMounted]);
 
 
     return (
